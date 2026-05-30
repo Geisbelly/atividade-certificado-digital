@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Certificado Digital — ICP-Brasil (Simulado)</title>
+<style>
+  :root {
+    --verde: #1b7a3d;
+    --verde-claro: #e8f5ec;
+    --amarelo: #f5c400;
+    --azul: #14467a;
+    --azul-claro: #e9f0f8;
+    --cinza: #f4f6f8;
+    --borda: #d6dbe0;
+    --texto: #1f2933;
+    --alerta-bg: #fff4e5;
+    --alerta-borda: #f0a500;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cinza);
+    color: var(--texto);
+    line-height: 1.55;
+  }
+  header {
+    background: linear-gradient(135deg, var(--verde), var(--azul));
+    color: #fff;
+    padding: 26px 20px 20px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 6px; font-size: 1.55rem; display: flex; gap: 10px; justify-content: center; align-items: center; }
+  header p { margin: 0; opacity: .92; font-size: .95rem; }
+  .container { max-width: 940px; margin: 0 auto; padding: 0 16px 60px; }
+
+  /* Ícones SVG */
+  .icon { width: 1.1em; height: 1.1em; stroke: currentColor; stroke-width: 2;
+          fill: none; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.18em; flex: none; }
+  .icon-lg { width: 22px; height: 22px; }
+
+  .aviso {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--alerta-bg);
+    border: 1px solid var(--alerta-borda);
+    border-left-width: 6px;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 18px 0;
+    font-size: .9rem;
+  }
+  .aviso .icon { color: #b35900; margin-top: 2px; }
+  .aviso strong { color: #b35900; }
+
+  /* Abas */
+  .tabs { display: flex; gap: 6px; margin-top: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    flex: 1 1 200px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 16px;
+    border: 1px solid var(--borda);
+    border-bottom: none;
+    background: #eef1f4;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 10px 10px 0 0;
+    color: #51606e;
+    transition: .15s;
+  }
+  .tab-btn:hover { background: #e3e8ed; }
+  .tab-btn.active { background: #fff; color: var(--verde); border-color: var(--borda); box-shadow: 0 -2px 0 var(--verde) inset; }
+
+  .panel {
+    display: none;
+    background: #fff;
+    border: 1px solid var(--borda);
+    border-radius: 0 10px 10px 10px;
+    padding: 24px;
+  }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px);} to {opacity:1; transform:none;} }
+
+  /* Formulário */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 4px; color: #45525f; }
+  input, select {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--borda);
+    border-radius: 7px; font-size: .95rem; background: #fff;
+  }
+  input:focus, select:focus { outline: 2px solid var(--verde); border-color: var(--verde); }
+  .hint { font-size: .74rem; color: #7a8694; margin-top: 3px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--verde); color: #fff; border: none; padding: 12px 22px;
+    font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer;
+    transition: .15s; margin-top: 6px; text-decoration: none;
+  }
+  .btn:hover { background: #15622f; }
+  .btn:disabled { opacity: .6; cursor: progress; }
+  .btn-sec { background: var(--azul); }
+  .btn-sec:hover { background: #0f3057; }
+
+  /* Resultado */
+  #resultado { margin-top: 24px; display: none; }
+  .card { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+  .card-head { display: flex; align-items: center; gap: 8px; background: var(--verde-claro);
+               padding: 12px 16px; font-weight: 700; color: var(--verde); }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 9px 16px; border-bottom: 1px solid #eef1f4; font-size: .9rem; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.k { width: 38%; color: #51606e; font-weight: 600; }
+  td.v { word-break: break-word; font-family: "Consolas", monospace; }
+  .erro { display: flex; gap: 8px; align-items: center; background: #fdecea; border: 1px solid #f5c2bd;
+          color: #a32018; padding: 12px 16px; border-radius: 8px; margin-top: 16px; }
+
+  /* Card de arquivos gerados */
+  .arquivo {
+    display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+    border-bottom: 1px solid #eef1f4;
+  }
+  .arquivo:last-child { border-bottom: none; }
+  .arquivo .fileicon { width: 38px; height: 38px; border-radius: 8px; display: flex;
+        align-items: center; justify-content: center; flex: none; }
+  .arquivo .fileicon.cert { background: var(--verde-claro); color: var(--verde); }
+  .arquivo .fileicon.key  { background: var(--azul-claro); color: var(--azul); }
+  .arquivo .info { flex: 1; min-width: 0; }
+  .arquivo .nome { font-weight: 700; font-family: "Consolas", monospace; }
+  .arquivo .meta { font-size: .8rem; color: #7a8694; }
+  .arquivo .dl { display: inline-flex; align-items: center; gap: 6px; background: var(--verde);
+        color: #fff; text-decoration: none; padding: 8px 14px; border-radius: 7px; font-size: .85rem; font-weight: 600; }
+  .arquivo .dl.key { background: var(--azul); }
+  .arquivo .dl:hover { filter: brightness(.92); }
+
+  /* Visualização do PEM */
+  .pem-wrap { border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; margin-bottom: 18px; }
+  .pem-head { display: flex; align-items: center; justify-content: space-between;
+              background: #0f1b2d; color: #d6e4ff; padding: 8px 14px; font-size: .85rem; font-weight: 600; }
+  .pem-head .lbl { display: flex; align-items: center; gap: 8px; }
+  .copy-btn { display: inline-flex; align-items: center; gap: 6px; background: #243a57; color: #d6e4ff;
+        border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: .78rem; }
+  .copy-btn:hover { background: #2f4a6e; }
+  pre { margin: 0; padding: 14px; background: #0f1b2d; color: #d6e4ff; overflow-x: auto;
+        font-size: .76rem; white-space: pre-wrap; word-break: break-all; }
+
+  /* Aba explicação */
+  .panel h2 { display: flex; align-items: center; gap: 8px; color: var(--verde); margin-top: 30px;
+              font-size: 1.2rem; border-bottom: 2px solid var(--verde-claro); padding-bottom: 6px; }
+  .panel h2:first-child { margin-top: 0; }
+  .panel h3 { color: var(--azul); margin-bottom: 4px; font-size: 1.02rem; }
+  .steps { counter-reset: step; list-style: none; padding: 0; }
+  .steps li { position: relative; padding: 10px 0 10px 46px; border-bottom: 1px dashed #e3e8ed; }
+  .steps li::before {
+    counter-increment: step; content: counter(step);
+    position: absolute; left: 0; top: 10px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--verde); color: #fff; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tag { display: inline-block; background: var(--verde-claro); color: var(--verde);
+         padding: 1px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+  .flow .node { background: var(--verde-claro); border: 1px solid var(--verde); color: var(--verde);
+        padding: 8px 12px; border-radius: 8px; font-size: .82rem; font-weight: 600; }
+  .flow .arrow { color: #9aa7b4; }
+  .panel ul li { margin-bottom: 5px; }
+  code.inline { background: #eef1f4; padding: 1px 6px; border-radius: 4px; font-size: .85em; font-family: "Consolas", monospace; }
+  .box { background: var(--azul-claro); border-left: 5px solid var(--azul); border-radius: 8px;
+         padding: 12px 16px; margin: 14px 0; font-size: .9rem; }
+  .box.verde { background: var(--verde-claro); border-color: var(--verde); }
+  .deftable { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .deftable th { text-align: left; background: var(--verde-claro); color: var(--verde); padding: 8px 12px; font-size: .85rem; }
+  .deftable td { padding: 8px 12px; border-bottom: 1px solid #eef1f4; font-size: .87rem; }
+  .faq summary { cursor: pointer; font-weight: 600; color: var(--azul); padding: 10px 0; }
+  .faq details { border-bottom: 1px solid #eef1f4; }
+  /* Listagem */
+  .badge { background: var(--verde); color: #fff; border-radius: 20px; padding: 1px 9px; font-size: .78rem; margin-left: 4px; }
+  .vazio { display: flex; gap: 10px; align-items: center; justify-content: center; color: #7a8694;
+           padding: 28px 16px; font-size: .9rem; text-align: center; }
+  .tabela-wrap { overflow-x: auto; }
+  #tabelaLista thead th { text-align: left; background: #f7f9fb; color: #51606e; font-size: .78rem;
+        text-transform: uppercase; letter-spacing: .03em; padding: 10px 14px; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+  #tabelaLista tbody td { padding: 11px 14px; border-bottom: 1px solid #eef1f4; font-size: .88rem; }
+  #tabelaLista tbody tr:hover { background: var(--verde-claro); }
+  #tabelaLista tbody tr { cursor: pointer; }
+  .btn-mini { display: inline-flex; align-items: center; gap: 6px; background: var(--azul); color: #fff;
+        border: none; padding: 7px 12px; border-radius: 7px; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-mini:hover { background: #0f3057; }
+  .pill { display:inline-block; font-size:.74rem; padding:1px 8px; border-radius:20px; font-weight:600; }
+  .pill.sim { background: var(--verde-claro); color: var(--verde); }
+  .pill.nao { background: #fdecea; color: #a32018; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(15,27,45,.6); display: none;
+        align-items: flex-start; justify-content: center; padding: 30px 14px; z-index: 50; overflow-y: auto; }
+  .modal-overlay.open { display: flex; animation: fade .2s ease; }
+  .modal { background: #fff; border-radius: 12px; width: 100%; max-width: 760px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+        background: linear-gradient(135deg, var(--verde), var(--azul)); color: #fff; padding: 16px 20px; border-radius: 12px 12px 0 0; }
+  .modal-head h3 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+  .modal-close { background: rgba(255,255,255,.2); border: none; color: #fff; width: 32px; height: 32px;
+        border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: rgba(255,255,255,.35); }
+  .modal-body { padding: 20px; }
+
+  /* Conteúdo didático avançado */
+  .toc { background: var(--cinza); border: 1px solid var(--borda); border-radius: 10px; padding: 14px 18px; margin-bottom: 20px; }
+  .toc strong { display: flex; align-items: center; gap: 8px; color: var(--azul); margin-bottom: 6px; }
+  .toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 26px; }
+  .toc a { color: var(--azul); text-decoration: none; font-size: .87rem; }
+  .toc a:hover { text-decoration: underline; }
+  .codebox { background: #f7f9fb; border: 1px solid var(--borda); border-radius: 8px; padding: 12px 14px;
+        font-family: "Consolas", monospace; font-size: .82rem; white-space: pre-wrap; overflow-x: auto; margin: 12px 0; color: #1f2933; }
+  .formula { background: #0f1b2d; color: #d6e4ff; border-radius: 8px; padding: 12px 14px;
+        font-family: "Consolas", monospace; font-size: .85rem; margin: 12px 0; overflow-x: auto; white-space: pre-wrap; }
+  .formula .c { color: #8fb3ff; }
+  .ref { font-size: .86rem; }
+  .ref li { margin-bottom: 7px; }
+  .panel h4 { color: #45525f; margin: 16px 0 4px; font-size: .95rem; }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+  @media (max-width: 640px) { .twocol, .toc ol { grid-template-columns: 1fr; columns: 1; } }
+  footer { text-align: center; font-size: .8rem; color: #7a8694; padding: 18px; display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<!-- Definição central dos ícones SVG (reutilizados via <use>) -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V6z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><line x1="12" y1="9" x2="12" y2="14"/><line x1="12" y1="17" x2="12" y2="17"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14 6a3.5 3.5 0 0 0 4.6 4.6L21 13l-8 8-2.4-2.4A3.5 3.5 0 0 0 6 14L3.5 11.5 11.5 3.5 14 6z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 19H6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="i-file-cert" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="12" cy="14" r="2.2"/><path d="M11 16l-1 3 2-1 2 1-1-3"/></symbol>
+  <symbol id="i-file-key" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><circle cx="10" cy="14" r="1.6"/><path d="M11.4 14H16M14.5 14v2"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v3"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12" y2="8"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="8" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></symbol>
+</svg>
+
+<header>
+  <h1><svg class="icon icon-lg"><use href="#i-lock"/></svg> Gerador de Certificado Digital</h1>
+  <p>Simulação educacional no padrão X.509 — Infraestrutura de Chaves Públicas Brasileira (ICP-Brasil)</p>
+</header>
+
+<div class="container">
+
+  <div class="aviso">
+    <svg class="icon icon-lg"><use href="#i-warn"/></svg>
+    <div><strong>Atenção:</strong> este certificado é <strong>autoassinado e simulado</strong>, criado
+    apenas para fins <strong>educacionais</strong>. Ele <strong>não tem validade jurídica</strong> e
+    <strong>não substitui</strong> um certificado emitido por uma Autoridade Certificadora (AC)
+    credenciada na ICP-Brasil.</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="abrirAba(event,'gerar')"><svg class="icon"><use href="#i-tool"/></svg> Gerar Certificado</button>
+    <button class="tab-btn" onclick="abrirAba(event,'explicacao')"><svg class="icon"><use href="#i-book"/></svg> Explicação do Conteúdo</button>
+  </div>
+
+  <!-- ABA 1: GERAR -->
+  <section id="gerar" class="panel active">
+    <p>Preencha os dados do titular do certificado. Ao gerar, você verá os <strong>detalhes</strong>,
+       os <strong>arquivos criados</strong> e o <strong>conteúdo dos certificados</strong>, podendo baixá-los.</p>
+
+    <form id="form">
+      <div class="grid">
+        <div>
+          <label>País (2 letras)</label>
+          <input name="pais" value="BR" maxlength="2" required>
+          <div class="hint">Ex.: BR</div>
+        </div>
+        <div>
+          <label>Estado / Província</label>
+          <input name="estado" placeholder="Ex.: Sao Paulo" required>
+        </div>
+        <div>
+          <label>Cidade / Localidade</label>
+          <input name="cidade" placeholder="Ex.: Campinas" required>
+        </div>
+        <div>
+          <label>Organização</label>
+          <input name="organizacao" placeholder="Ex.: Minha Empresa LTDA" required>
+        </div>
+        <div>
+          <label>Nome Comum (CN)</label>
+          <input name="nome_comum" placeholder="Ex.: Usuario de Teste" required>
+        </div>
+        <div>
+          <label>E-mail</label>
+          <input name="email" type="email" placeholder="Ex.: usuario@exemplo.com.br" required>
+        </div>
+        <div>
+          <label>Tamanho da chave RSA</label>
+          <select name="bits">
+            <option value="2048" selected>2048 bits (recomendado)</option>
+            <option value="3072">3072 bits</option>
+            <option value="4096">4096 bits (mais forte / mais lento)</option>
+          </select>
+        </div>
+        <div>
+          <label>Validade (dias)</label>
+          <input name="dias" type="number" value="365" min="1">
+          <div class="hint">365 = 1 ano</div>
+        </div>
+        <div class="full">
+          <label>Senha da chave privada (opcional, mas recomendado)</label>
+          <input name="senha" type="password" placeholder="Deixe em branco para não proteger">
+          <div class="hint">Se informada, a chave privada será criptografada com esta senha.</div>
+        </div>
+      </div>
+      <button type="submit" class="btn" id="btnGerar"><svg class="icon"><use href="#i-gear"/></svg> Gerar Certificado</button>
+    </form>
+
+    <div id="erroBox"></div>
+    <div id="okBox"></div>
+
+    <!-- Listagem dos certificados gerados -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-head">
+        <svg class="icon"><use href="#i-list"/></svg> Certificados gerados
+        <span id="contador" class="badge"></span>
+      </div>
+      <div id="vazio" class="vazio">
+        <svg class="icon icon-lg"><use href="#i-file-cert"/></svg>
+        Nenhum certificado gerado ainda. Preencha o formulário acima e clique em <strong>Gerar Certificado</strong>.
+      </div>
+      <div class="tabela-wrap">
+        <table id="tabelaLista" style="display:none;">
+          <thead>
+            <tr>
+              <th>Nome Comum (CN)</th>
+              <th>Organização</th>
+              <th>Local</th>
+              <th>Chave</th>
+              <th>Válido até</th>
+              <th>Criado em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="corpoLista"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABA 2: EXPLICAÇÃO -->
+  <section id="explicacao" class="panel">
+
+    <div class="toc">
+      <strong><svg class="icon"><use href="#i-list"/></svg> Conteúdo</strong>
+      <ol>
+        <li><a href="#s-oque">O que é um certificado digital</a></li>
+        <li><a href="#s-pubkey">Criptografia de chave pública (RSA)</a></li>
+        <li><a href="#s-simassim">Simétrica × assimétrica e cripto híbrida</a></li>
+        <li><a href="#s-rsa">Fundamentos matemáticos do RSA</a></li>
+        <li><a href="#s-padding">Padding e esquemas (PKCS#1, OAEP, PSS)</a></li>
+        <li><a href="#s-hash">Funções de hash criptográficas</a></li>
+        <li><a href="#s-x509">O padrão X.509 e o DN</a></li>
+        <li><a href="#s-asn1">Codificação: ASN.1, DER, Base64, PEM</a></li>
+        <li><a href="#s-extensoes">Extensões X.509 v3</a></li>
+        <li><a href="#s-assinatura">Assinatura digital (passo a passo)</a></li>
+        <li><a href="#s-fingerprint">Impressão digital (fingerprint)</a></li>
+        <li><a href="#s-cadeia">Validação da cadeia de confiança</a></li>
+        <li><a href="#s-revogacao">Revogação: CRL e OCSP</a></li>
+        <li><a href="#s-tls">Onde entram os certificados: TLS/HTTPS</a></li>
+        <li><a href="#s-ecc">Alternativas: ECC e curvas elípticas</a></li>
+        <li><a href="#s-quantica">Ameaça quântica e pós-quântica</a></li>
+        <li><a href="#s-pkcs">A família de padrões PKCS</a></li>
+        <li><a href="#s-ferramenta">O que esta ferramenta faz</a></li>
+        <li><a href="#s-icp">ICP-Brasil em profundidade</a></li>
+        <li><a href="#s-boaspraticas">Boas práticas de segurança</a></li>
+        <li><a href="#s-ref">Referências (RFCs e normas)</a></li>
+        <li><a href="#s-glossario">Glossário</a></li>
+        <li><a href="#s-faq">Perguntas frequentes</a></li>
+      </ol>
+    </div>
+
+    <h2 id="s-oque"><svg class="icon"><use href="#i-info"/></svg> O que é um certificado digital?</h2>
+    <p>Um <strong>certificado digital</strong> é um documento eletrônico que associa, de forma confiável,
+       uma <strong>identidade</strong> (pessoa, empresa ou servidor) a uma <strong>chave pública</strong>.
+       É como uma "carteira de identidade" no mundo digital. Com ele é possível:</p>
+    <ul>
+      <li><strong>Assinar digitalmente</strong> documentos e arquivos com valor de autoria;</li>
+      <li><strong>Autenticar-se</strong> em sistemas e sites com segurança;</li>
+      <li><strong>Cifrar</strong> dados e comunicações, garantindo sigilo;</li>
+      <li>Garantir <strong>integridade</strong> (o conteúdo não foi alterado) e
+          <strong>não-repúdio</strong> (o autor não pode negar que assinou).</li>
+    </ul>
+
+    <h2 id="s-pubkey"><svg class="icon"><use href="#i-key"/></svg> Criptografia de chave pública (RSA)</h2>
+    <p>O certificado se apoia na <strong>criptografia assimétrica</strong>, que usa um
+       <strong>par de chaves</strong> matematicamente relacionadas:</p>
+    <ul>
+      <li><span class="tag">Chave privada</span> — secreta, fica apenas com o titular. Usada para
+          <em>assinar</em> e <em>descriptografar</em>.</li>
+      <li><span class="tag">Chave pública</span> — distribuída livremente (vai dentro do certificado).
+          Usada para <em>verificar assinaturas</em> e <em>criptografar</em> mensagens destinadas ao titular.</li>
+    </ul>
+    <p>O que uma chave do par cifra, somente a outra consegue decifrar. Assim, uma assinatura feita com a
+       chave privada pode ser verificada por qualquer pessoa usando a chave pública — provando a autoria.</p>
+    <div class="box verde">
+      <strong>Por que no mínimo 2048 bits?</strong> O tamanho da chave determina a dificuldade de quebrá-la
+      por força bruta. Chaves RSA menores que 2048 bits são consideradas inseguras hoje. Quanto maior
+      (3072, 4096), mais forte — porém mais lenta para gerar e usar.
+    </div>
+
+    <h2 id="s-simassim"><svg class="icon"><use href="#i-lock"/></svg> Criptografia simétrica × assimétrica e o modelo híbrido</h2>
+    <table class="deftable">
+      <tr><th></th><th>Simétrica</th><th>Assimétrica</th></tr>
+      <tr><td><strong>Chaves</strong></td><td>Uma única chave secreta compartilhada</td><td>Par: pública + privada</td></tr>
+      <tr><td><strong>Velocidade</strong></td><td>Muito rápida</td><td>Lenta (operações com números grandes)</td></tr>
+      <tr><td><strong>Problema</strong></td><td>Como combinar a chave em segredo?</td><td>Resolve a distribuição de chaves</td></tr>
+      <tr><td><strong>Exemplos</strong></td><td>AES, ChaCha20, 3DES</td><td>RSA, ECDSA, Diffie-Hellman</td></tr>
+    </table>
+    <p>Como a criptografia assimétrica é lenta, na prática usa-se um <strong>esquema híbrido</strong>:
+       a chave pública (RSA/ECC) é usada apenas para <em>transportar</em> uma chave simétrica
+       aleatória (chave de sessão); todo o tráfego real é então cifrado com algoritmo simétrico
+       rápido (ex.: AES). É exatamente isso que acontece no TLS/HTTPS.</p>
+
+    <h2 id="s-rsa"><svg class="icon"><use href="#i-gear"/></svg> Fundamentos matemáticos do RSA</h2>
+    <p>O RSA (Rivest–Shamir–Adleman, 1977) baseia-se na <strong>aritmética modular</strong> e na
+       dificuldade de <strong>fatorar</strong> o produto de dois números primos grandes.</p>
+
+    <h4>1. Geração das chaves</h4>
+    <div class="formula"><span class="c"># Escolhe dois primos grandes p, q (na prática ~1024 bits cada para n de 2048 bits)</span>
+n = p × q                       <span class="c"># módulo (faz parte das duas chaves)</span>
+φ(n) = (p − 1) × (q − 1)        <span class="c"># função totiente de Euler</span>
+escolhe e  tal que  1 &lt; e &lt; φ(n)  e  mdc(e, φ(n)) = 1   <span class="c"># normalmente e = 65537</span>
+d ≡ e⁻¹ (mod φ(n))             <span class="c"># d é o inverso multiplicativo de e (alg. de Euclides estendido)</span>
+
+Chave pública  = (n, e)
+Chave privada  = (n, d)   <span class="c"># p, q e φ(n) são descartados/guardados em segredo</span></div>
+
+    <h4>2. Cifragem e decifragem</h4>
+    <div class="formula">cifrar:    c = m<sup>e</sup> mod n        <span class="c"># m = mensagem (número &lt; n)</span>
+decifrar:  m = c<sup>d</sup> mod n        <span class="c"># recupera a mensagem original</span></div>
+    <p>Funciona porque, pelo teorema de Euler, <code class="inline">m<sup>e·d</sup> ≡ m (mod n)</code>.
+       A assinatura é a operação "espelhada": assina-se com <em>d</em> (privada) e verifica-se com <em>e</em> (pública).</p>
+
+    <h4>3. Exemplo numérico (brinquedo — inseguro, só para entender)</h4>
+    <div class="codebox">p = 61, q = 53
+n = 61 × 53 = 3233
+φ(n) = 60 × 52 = 3120
+e = 17           (mdc(17, 3120) = 1)
+d = 2753         (pois 17 × 2753 = 46801 ≡ 1 mod 3120)
+
+Mensagem m = 65
+Cifra:    c = 65^17  mod 3233 = 2790
+Decifra:  m = 2790^2753 mod 3233 = 65  ✓</div>
+
+    <h4>4. Por que é seguro?</h4>
+    <p>A chave pública revela <code class="inline">n</code> e <code class="inline">e</code>. Para obter
+       <code class="inline">d</code> seria preciso conhecer <code class="inline">φ(n)</code>, o que exige
+       <strong>fatorar n</strong> em <code class="inline">p × q</code>. Para n de 2048 bits, não há
+       algoritmo clássico viável — daí o tamanho mínimo recomendado. (O expoente
+       <code class="inline">65537 = 2<sup>16</sup>+1</code> é escolhido por ser primo e ter poucos bits 1,
+       acelerando a exponenciação sem enfraquecer a segurança.)</p>
+
+    <h2 id="s-padding"><svg class="icon"><use href="#i-shield"/></svg> Padding e esquemas de cifragem/assinatura</h2>
+    <p>RSA "puro" (textbook) é <strong>inseguro</strong>: é determinístico e maleável. Por isso sempre se
+       aplica um <strong>preenchimento (padding)</strong> antes da operação:</p>
+    <table class="deftable">
+      <tr><th>Esquema</th><th>Uso</th><th>Observação</th></tr>
+      <tr><td><strong>PKCS#1 v1.5</strong></td><td>Cifragem e assinatura (legado)</td><td>Ainda comum; assinatura é aceitável, cifragem é desencorajada</td></tr>
+      <tr><td><strong>OAEP</strong></td><td>Cifragem</td><td>Padding probabilístico moderno para <em>cifrar</em></td></tr>
+      <tr><td><strong>PSS</strong></td><td>Assinatura</td><td>Padding probabilístico moderno para <em>assinar</em> (recomendado)</td></tr>
+    </table>
+    <p>Nesta ferramenta, a biblioteca <code class="inline">cryptography</code> aplica automaticamente o
+       padding adequado ao assinar o certificado (PKCS#1 v1.5 com SHA-256, padrão do
+       <code class="inline">CertificateBuilder</code>).</p>
+
+    <h2 id="s-hash"><svg class="icon"><use href="#i-eye"/></svg> Funções de hash criptográficas</h2>
+    <p>Uma função de hash <code class="inline">H(x)</code> transforma uma entrada de qualquer tamanho em
+       um <strong>resumo de tamanho fixo</strong> (digest). Para uso criptográfico, precisa ter três
+       propriedades:</p>
+    <ul>
+      <li><strong>Resistência à pré-imagem:</strong> dado <code class="inline">h</code>, é inviável achar
+          <code class="inline">x</code> tal que <code class="inline">H(x) = h</code>.</li>
+      <li><strong>Resistência à segunda pré-imagem:</strong> dado <code class="inline">x</code>, é inviável
+          achar <code class="inline">x' ≠ x</code> com <code class="inline">H(x') = H(x)</code>.</li>
+      <li><strong>Resistência a colisão:</strong> é inviável achar <em>qualquer</em> par
+          <code class="inline">x ≠ x'</code> com o mesmo hash.</li>
+    </ul>
+    <p>O <strong>efeito avalanche</strong> garante que mudar 1 bit da entrada muda ~50% dos bits do
+       digest. A família <strong>SHA-2</strong> (SHA-256, SHA-384, SHA-512) é o padrão atual; já
+       <strong>MD5</strong> e <strong>SHA-1</strong> estão <strong>quebrados</strong> (colisões práticas)
+       e não devem ser usados para assinatura. SHA-256 produz um digest de 256 bits (32 bytes).</p>
+    <div class="codebox">SHA-256("certificado")  → e3b0c44298fc1c149afbf4c8996fb924... (64 hex / 256 bits)
+SHA-256("certificadо")  → 7d865e959b2466918c9863... (totalmente diferente — 1 letra trocada)</div>
+
+    <h2 id="s-x509"><svg class="icon"><use href="#i-doc"/></svg> O padrão X.509</h2>
+    <p><strong>X.509</strong> é o formato internacional (definido pela ITU-T e usado na Internet via
+       RFC 5280) que padroniza a estrutura de um certificado. Os principais campos são:</p>
+    <table class="deftable">
+      <tr><th>Campo</th><th>Descrição</th></tr>
+      <tr><td><strong>Subject (Titular)</strong></td><td>Quem o certificado identifica, descrito pelo <em>Distinguished Name (DN)</em>.</td></tr>
+      <tr><td><strong>Issuer (Emissor)</strong></td><td>Quem emitiu e assinou o certificado.</td></tr>
+      <tr><td><strong>Public Key</strong></td><td>A chave pública do titular.</td></tr>
+      <tr><td><strong>Serial Number</strong></td><td>Número de série único atribuído pelo emissor.</td></tr>
+      <tr><td><strong>Validity</strong></td><td>Datas de início (<code class="inline">notBefore</code>) e fim (<code class="inline">notAfter</code>).</td></tr>
+      <tr><td><strong>Signature</strong></td><td>Assinatura digital do emissor (aqui com <strong>SHA-256</strong>).</td></tr>
+      <tr><td><strong>Extensions</strong></td><td>Ex.: <code class="inline">KeyUsage</code>, <code class="inline">BasicConstraints</code>, <code class="inline">SubjectAlternativeName</code>.</td></tr>
+    </table>
+
+    <h3>O Distinguished Name (DN)</h3>
+    <p>O DN é o conjunto de atributos que identifica o titular. Os usados nesta atividade:</p>
+    <table class="deftable">
+      <tr><th>Sigla</th><th>Atributo</th><th>Exemplo</th></tr>
+      <tr><td><code class="inline">C</code></td><td>Country (País)</td><td>BR</td></tr>
+      <tr><td><code class="inline">ST</code></td><td>State (Estado)</td><td>Sao Paulo</td></tr>
+      <tr><td><code class="inline">L</code></td><td>Locality (Cidade)</td><td>Campinas</td></tr>
+      <tr><td><code class="inline">O</code></td><td>Organization (Organização)</td><td>Minha Empresa LTDA</td></tr>
+      <tr><td><code class="inline">CN</code></td><td>Common Name (Nome Comum)</td><td>Usuario de Teste</td></tr>
+    </table>
+    <div class="box">
+      <svg class="icon"><use href="#i-info"/></svg>
+      Neste exercício o certificado é <strong>autoassinado</strong>: o <em>Titular (Subject)</em> e o
+      <em>Emissor (Issuer)</em> são a mesma entidade, pois não há uma Autoridade Certificadora real
+      assinando por nós.
+    </div>
+
+    <h3>Formato dos arquivos: PEM</h3>
+    <p>Os arquivos são salvos em <strong>PEM</strong> (Base64 entre marcadores
+       <code class="inline">-----BEGIN...-----</code> / <code class="inline">-----END...-----</code>):</p>
+    <ul>
+      <li><code class="inline">certificate.pem</code> → contém o certificado (parte <strong>pública</strong>, pode ser distribuído);</li>
+      <li><code class="inline">private_key.pem</code> → contém a chave privada (parte <strong>secreta</strong>, no padrão PKCS#8, opcionalmente cifrada por senha).</li>
+    </ul>
+
+    <h2 id="s-asn1"><svg class="icon"><use href="#i-doc"/></svg> Codificação: ASN.1, DER, Base64 e PEM</h2>
+    <p>Um certificado X.509 é descrito por uma <strong>gramática abstrata</strong> chamada
+       <strong>ASN.1</strong> (Abstract Syntax Notation One). Essa estrutura é então
+       <strong>serializada em bytes</strong> por um conjunto de regras de codificação:</p>
+    <table class="deftable">
+      <tr><th>Camada</th><th>O que é</th></tr>
+      <tr><td><strong>ASN.1</strong></td><td>A "linguagem" que define os campos e tipos (SEQUENCE, INTEGER, OID…).</td></tr>
+      <tr><td><strong>DER</strong></td><td>Distinguished Encoding Rules — codificação binária <em>canônica</em> (1 só forma válida). É sobre os bytes DER que a assinatura é calculada.</td></tr>
+      <tr><td><strong>BER</strong></td><td>Variante mais permissiva do DER (várias formas válidas).</td></tr>
+      <tr><td><strong>Base64</strong></td><td>Converte os bytes DER em texto ASCII (A–Z, a–z, 0–9, +, /).</td></tr>
+      <tr><td><strong>PEM</strong></td><td>O Base64 envelopado entre marcadores <code class="inline">-----BEGIN…-----</code>/<code class="inline">-----END…-----</code>.</td></tr>
+    </table>
+    <p>Cada campo carrega um <strong>OID</strong> (Object Identifier), um identificador numérico global.
+       Por exemplo, <code class="inline">2.5.4.3</code> = Common Name e
+       <code class="inline">1.2.840.113549.1.1.11</code> = sha256WithRSAEncryption.</p>
+    <h4>Estrutura ASN.1 (simplificada) de um certificado</h4>
+    <div class="codebox">Certificate ::= SEQUENCE {
+    tbsCertificate       TBSCertificate,      -- "to be signed": tudo o que é assinado
+    signatureAlgorithm   AlgorithmIdentifier, -- ex.: sha256WithRSAEncryption
+    signatureValue       BIT STRING           -- a assinatura propriamente dita
+}
+TBSCertificate ::= SEQUENCE {
+    version, serialNumber, signature,
+    issuer, validity, subject,
+    subjectPublicKeyInfo,                     -- a chave pública do titular
+    extensions [3] EXPLICIT Extensions OPTIONAL
+}</div>
+    <p>A AC calcula a assinatura sobre os bytes DER de <code class="inline">tbsCertificate</code> e a
+       coloca em <code class="inline">signatureValue</code> — por isso qualquer alteração no conteúdo
+       invalida a assinatura.</p>
+
+    <h2 id="s-extensoes"><svg class="icon"><use href="#i-list"/></svg> Extensões X.509 v3</h2>
+    <p>A versão 3 do X.509 adicionou <strong>extensões</strong>, que ampliam o certificado. Cada extensão
+       pode ser marcada como <strong>crítica</strong> (se o software não a entender, deve rejeitar o
+       certificado) ou <strong>não crítica</strong>. As principais:</p>
+    <table class="deftable">
+      <tr><th>Extensão</th><th>Função</th></tr>
+      <tr><td><strong>BasicConstraints</strong></td><td>Indica se o certificado é de uma AC (<code class="inline">CA=true</code>) e o comprimento máximo da cadeia.</td></tr>
+      <tr><td><strong>KeyUsage</strong></td><td>Usos permitidos da chave: assinatura digital, não-repúdio, cifragem de chave, assinatura de certificados (keyCertSign), etc.</td></tr>
+      <tr><td><strong>ExtendedKeyUsage (EKU)</strong></td><td>Usos específicos: autenticação de servidor TLS, de cliente, assinatura de código, e-mail (S/MIME)…</td></tr>
+      <tr><td><strong>SubjectAlternativeName (SAN)</strong></td><td>Nomes adicionais do titular (DNS, IP, e-mail). Em TLS, é o SAN — não o CN — que vale para validar o domínio.</td></tr>
+      <tr><td><strong>SubjectKeyIdentifier (SKI)</strong></td><td>Identificador da chave pública deste certificado.</td></tr>
+      <tr><td><strong>AuthorityKeyIdentifier (AKI)</strong></td><td>Aponta para a chave da AC que assinou — liga o certificado ao emissor na cadeia.</td></tr>
+      <tr><td><strong>CRLDistributionPoints</strong></td><td>URLs onde encontrar a lista de revogação (CRL).</td></tr>
+      <tr><td><strong>AuthorityInfoAccess (AIA)</strong></td><td>URLs do respondedor OCSP e do certificado da AC emissora.</td></tr>
+    </table>
+    <p>Esta ferramenta inclui <code class="inline">BasicConstraints (CA=false)</code>,
+       <code class="inline">KeyUsage</code> (assinatura digital + não-repúdio + cifragem de chave) e
+       <code class="inline">SubjectAlternativeName</code> (e-mail) — visíveis na seção
+       <em>"Certificado decodificado"</em>.</p>
+
+    <h2 id="s-assinatura"><svg class="icon"><use href="#i-check"/></svg> Como funciona a assinatura digital (passo a passo)</h2>
+    <p>A assinatura digital combina <strong>função de hash</strong> + <strong>criptografia assimétrica</strong>.
+       Ela prova <em>autoria</em> e <em>integridade</em> de um documento:</p>
+    <h3>Ao assinar (quem envia)</h3>
+    <ol class="steps">
+      <li>Calcula-se o <strong>hash</strong> (resumo digital, ex.: SHA-256) do documento.</li>
+      <li>Esse hash é <strong>cifrado com a chave privada</strong> do autor — o resultado é a <strong>assinatura</strong>.</li>
+      <li>O documento é enviado acompanhado da assinatura e do certificado (que contém a chave pública).</li>
+    </ol>
+    <h3>Ao verificar (quem recebe)</h3>
+    <ol class="steps">
+      <li>Recalcula-se o <strong>hash</strong> do documento recebido.</li>
+      <li><strong>Decifra-se a assinatura</strong> com a chave pública do autor, obtendo o hash original.</li>
+      <li>Se os dois hashes forem <strong>iguais</strong>, a assinatura é válida: o documento não foi alterado
+          e só pode ter sido assinado por quem possui a chave privada correspondente.</li>
+    </ol>
+    <div class="box verde">
+      <strong>O que é um hash?</strong> É um "resumo" de tamanho fixo gerado a partir de qualquer
+      conteúdo. Qualquer alteração mínima no documento muda completamente o hash — por isso ele
+      garante a <strong>integridade</strong>.
+    </div>
+
+    <h2 id="s-fingerprint"><svg class="icon"><use href="#i-shield"/></svg> Impressão digital (fingerprint) do certificado</h2>
+    <p>O <em>fingerprint</em> é o hash do certificado inteiro (ex.: SHA-256). Serve para
+       <strong>identificar e comparar</strong> certificados de forma única e rápida — útil para
+       confirmar que um certificado é exatamente o esperado. Nesta ferramenta, o fingerprint aparece
+       na seção <em>"Certificado decodificado"</em> após a geração.</p>
+
+    <h2 id="s-cadeia"><svg class="icon"><use href="#i-globe"/></svg> Validação da cadeia de confiança</h2>
+    <p>Um certificado raramente é validado sozinho. O verificador monta uma <strong>cadeia</strong> até
+       uma <strong>âncora de confiança</strong> (root CA) instalada no sistema/navegador
+       (o <em>trust store</em> — ex.: Mozilla, Microsoft, Apple, Java):</p>
+    <div class="flow">
+      <span class="node">Certificado folha (titular)</span>
+      <span class="arrow">→</span>
+      <span class="node">AC intermediária</span>
+      <span class="arrow">→</span>
+      <span class="node">AC Raiz (autoassinada, confiável)</span>
+    </div>
+    <p>Para cada elo, o software (conforme a RFC 5280 — <em>path validation</em>) verifica:</p>
+    <ol class="steps">
+      <li>A <strong>assinatura</strong> do certificado confere com a chave pública do emissor (o elo acima)?</li>
+      <li>O certificado está <strong>dentro da validade</strong> (datas notBefore/notAfter)?</li>
+      <li>O emissor tinha permissão para emitir (<code class="inline">BasicConstraints CA=true</code> e <code class="inline">keyCertSign</code>)?</li>
+      <li>O nome/SAN corresponde ao que se espera (ex.: o domínio acessado)?</li>
+      <li>O certificado <strong>não foi revogado</strong> (CRL/OCSP)?</li>
+      <li>A cadeia termina em uma <strong>raiz confiável</strong>?</li>
+    </ol>
+    <div class="box">
+      <svg class="icon"><use href="#i-info"/></svg>
+      Como o certificado desta atividade é <strong>autoassinado</strong>, sua cadeia tem 1 elo e não
+      termina em uma raiz confiável conhecida — por isso navegadores exibiriam um aviso de
+      "não confiável". Isso é esperado numa simulação.
+    </div>
+
+    <h2 id="s-revogacao"><svg class="icon"><use href="#i-x"/></svg> Revogação: CRL e OCSP</h2>
+    <p>Antes do vencimento, um certificado pode precisar ser <strong>revogado</strong> (chave comprometida,
+       dados incorretos, desligamento). Há dois mecanismos principais para checar isso:</p>
+    <table class="deftable">
+      <tr><th>Mecanismo</th><th>Como funciona</th><th>Trade-off</th></tr>
+      <tr><td><strong>CRL</strong> (Certificate Revocation List)</td><td>A AC publica periodicamente uma lista assinada com os números de série revogados.</td><td>Lista pode ficar grande e desatualizada.</td></tr>
+      <tr><td><strong>OCSP</strong> (Online Certificate Status Protocol)</td><td>Consulta em tempo real o status de <em>um</em> certificado a um respondedor da AC.</td><td>Latência e privacidade (a AC vê o que você acessa).</td></tr>
+      <tr><td><strong>OCSP Stapling</strong></td><td>O próprio servidor TLS anexa uma resposta OCSP recente e assinada no handshake.</td><td>Resolve latência e privacidade.</td></tr>
+    </table>
+
+    <h2 id="s-tls"><svg class="icon"><use href="#i-globe"/></svg> Onde entram os certificados: TLS/HTTPS</h2>
+    <p>O cadeado do navegador é o uso mais comum de certificados X.509. De forma simplificada, o
+       <strong>handshake TLS</strong> (modelo híbrido) acontece assim:</p>
+    <ol class="steps">
+      <li>O cliente (navegador) abre conexão e envia os algoritmos que suporta (<em>ClientHello</em>).</li>
+      <li>O servidor responde e <strong>envia seu certificado</strong> (e a cadeia até a raiz).</li>
+      <li>O cliente <strong>valida a cadeia</strong> (seção anterior) e confere o domínio no SAN.</li>
+      <li>Cliente e servidor negociam uma <strong>chave de sessão simétrica</strong> (hoje via
+          ECDHE, com sigilo encaminhado / <em>forward secrecy</em>).</li>
+      <li>A partir daí, todo o tráfego é cifrado com algoritmo <strong>simétrico</strong> rápido (ex.: AES-GCM).</li>
+    </ol>
+    <p>Ou seja: o RSA/ECC do certificado serve para <em>autenticar</em> o servidor e proteger a troca da
+       chave; o conteúdo em si trafega com criptografia simétrica.</p>
+
+    <h2 id="s-ecc"><svg class="icon"><use href="#i-key"/></svg> Alternativas ao RSA: ECC (curvas elípticas)</h2>
+    <p>A <strong>Criptografia de Curvas Elípticas (ECC)</strong> oferece segurança equivalente ao RSA com
+       <strong>chaves muito menores</strong>, baseando-se no problema do logaritmo discreto em curvas
+       elípticas:</p>
+    <table class="deftable">
+      <tr><th>Segurança equivalente</th><th>RSA</th><th>ECC</th></tr>
+      <tr><td>~112 bits</td><td>2048 bits</td><td>224 bits</td></tr>
+      <tr><td>~128 bits</td><td>3072 bits</td><td>256 bits</td></tr>
+      <tr><td>~256 bits</td><td>15360 bits</td><td>521 bits</td></tr>
+    </table>
+    <p>Por isso ECC (algoritmos <strong>ECDSA</strong> para assinar, <strong>ECDH</strong> para troca de
+       chaves; curvas como P-256 e Curve25519) é preferida em dispositivos móveis e IoT. A ICP-Brasil
+       também admite certificados baseados em curvas elípticas.</p>
+
+    <h2 id="s-quantica"><svg class="icon"><use href="#i-warn"/></svg> Ameaça quântica e criptografia pós-quântica</h2>
+    <p>O <strong>algoritmo de Shor</strong>, executado em um computador quântico suficientemente grande,
+       fatoraria <code class="inline">n</code> (e resolveria o log discreto) em tempo polinomial —
+       <strong>quebrando RSA e ECC</strong>. Esses computadores ainda não existem em escala prática, mas a
+       ameaça motiva a <strong>criptografia pós-quântica (PQC)</strong>.</p>
+    <p>Em 2024 o NIST padronizou os primeiros algoritmos resistentes a ataques quânticos, baseados em
+       <em>reticulados (lattices)</em>: <strong>ML-KEM</strong> (Kyber, para troca de chaves) e
+       <strong>ML-DSA</strong> (Dilithium, para assinaturas). A migração das PKIs para PQC é um dos
+       grandes temas atuais de segurança.</p>
+
+    <h2 id="s-pkcs"><svg class="icon"><use href="#i-doc"/></svg> A família de padrões PKCS</h2>
+    <p>Os <strong>PKCS</strong> (Public-Key Cryptography Standards), originalmente da RSA Security,
+       padronizam formatos e operações. Os mais relevantes aqui:</p>
+    <table class="deftable">
+      <tr><th>Padrão</th><th>Para quê</th></tr>
+      <tr><td><strong>PKCS#1</strong></td><td>Operações e padding do RSA (v1.5, OAEP, PSS).</td></tr>
+      <tr><td><strong>PKCS#7 / CMS</strong></td><td>Mensagens assinadas/cifradas (base do S/MIME e do CAdES).</td></tr>
+      <tr><td><strong>PKCS#8</strong></td><td>Formato de chave privada (usado nesta ferramenta no <code class="inline">private_key.pem</code>).</td></tr>
+      <tr><td><strong>PKCS#10</strong></td><td>CSR — Certificate Signing Request (pedido de emissão enviado à AC).</td></tr>
+      <tr><td><strong>PKCS#11</strong></td><td>API para tokens/HSM (acesso a hardware criptográfico — A3/A4).</td></tr>
+      <tr><td><strong>PKCS#12 (.pfx/.p12)</strong></td><td>Agrupa certificado + chave privada em um único arquivo protegido por senha.</td></tr>
+    </table>
+    <div class="box">
+      <svg class="icon"><use href="#i-info"/></svg>
+      Numa emissão real, você geraria sua chave, criaria um <strong>CSR (PKCS#10)</strong> com seus dados
+      e o enviaria à AC, que devolveria o certificado assinado. Nesta simulação, como somos a própria AC,
+      pulamos o CSR e assinamos diretamente.
+    </div>
+
+    <h2 id="s-ferramenta"><svg class="icon"><use href="#i-gear"/></svg> O que esta ferramenta faz (passo a passo)</h2>
+    <ol class="steps">
+      <li><strong>Gera o par de chaves RSA</strong> do tamanho escolhido (≥ 2048 bits), com expoente público 65537.</li>
+      <li><strong>Monta o certificado X.509</strong> com os dados que você preencheu (DN), define a validade
+          (início = agora; fim = início + dias) e adiciona as extensões (<code class="inline">BasicConstraints</code>,
+          <code class="inline">KeyUsage</code>, <code class="inline">SubjectAlternativeName</code>).</li>
+      <li><strong>Assina</strong> o certificado com a chave privada, usando o algoritmo de hash SHA-256.</li>
+      <li><strong>Serializa e disponibiliza</strong> os dois arquivos PEM para visualização e download.</li>
+    </ol>
+
+    <h2 id="s-icp"><svg class="icon"><use href="#i-globe"/></svg> ICP-Brasil em profundidade</h2>
+    <p>A <strong>ICP-Brasil</strong> (instituída pela <strong>Medida Provisória nº 2.200-2/2001</strong>) é a hierarquia
+       oficial que confere <strong>validade jurídica</strong> aos certificados digitais no país. O
+       artigo 10 dessa MP estabelece a <strong>presunção de veracidade</strong> das assinaturas feitas
+       com certificados ICP-Brasil em relação aos signatários. A emissão real segue uma
+       <strong>cadeia de confiança</strong>:</p>
+    <div class="flow">
+      <span class="node">ITI — AC Raiz</span>
+      <span class="arrow"><svg class="icon"><use href="#i-download" /></svg></span>
+      <span class="node">Autoridade Certificadora (AC)</span>
+      <span class="arrow">→</span>
+      <span class="node">Autoridade de Registro (AR)</span>
+      <span class="arrow">→</span>
+      <span class="node">Titular</span>
+    </div>
+    <ul>
+      <li><strong>ITI (AC Raiz):</strong> o Instituto Nacional de Tecnologia da Informação está no topo
+          da cadeia e credencia as demais autoridades.</li>
+      <li><strong>AC (Autoridade Certificadora):</strong> emite os certificados seguindo as
+          <em>Políticas de Certificado (PC)</em> e a <em>Declaração de Práticas de Certificação (DPC)</em>.</li>
+      <li><strong>AR (Autoridade de Registro):</strong> faz a <strong>validação presencial ou por
+          videoconferência</strong> da identidade do solicitante.</li>
+    </ul>
+
+    <h3>Tipos de certificado na ICP-Brasil</h3>
+    <table class="deftable">
+      <tr><th>Tipo</th><th>Armazenamento</th><th>Característica</th></tr>
+      <tr><td><strong>A1</strong></td><td>Arquivo no computador</td><td>Validade típica de 1 ano</td></tr>
+      <tr><td><strong>A3</strong></td><td>Token USB ou cartão (smartcard)</td><td>Mais seguro; validade de até 3–5 anos</td></tr>
+      <tr><td><strong>A4</strong></td><td>Hardware criptográfico (HSM)</td><td>Maior nível de proteção da chave</td></tr>
+    </table>
+    <p>As séries indicam o <strong>par requisito de segurança × validade</strong>:</p>
+    <table class="deftable">
+      <tr><th>Série</th><th>Geração da chave</th><th>Armazenamento</th><th>Tamanho mín. da chave</th></tr>
+      <tr><td>A1 / S1</td><td>Software</td><td>Arquivo (HD)</td><td>RSA 2048</td></tr>
+      <tr><td>A2 / S2</td><td>Software</td><td>Cartão/token sem hardware cripto</td><td>RSA 2048</td></tr>
+      <tr><td>A3 / S3</td><td><strong>Hardware</strong></td><td>Token/smartcard cripto</td><td>RSA 2048</td></tr>
+      <tr><td>A4 / S4</td><td><strong>Hardware</strong></td><td>HSM</td><td>RSA 4096</td></tr>
+    </table>
+    <p>A letra <strong>A</strong> (Assinatura) destina-se a <em>assinatura digital e autenticação</em>;
+       a letra <strong>S</strong> (Sigilo) a <em>cifragem/confidencialidade</em>. A chave de hardware
+       (A3/A4) <strong>nunca sai</strong> do dispositivo — as operações ocorrem dentro dele (via PKCS#11).</p>
+
+    <h3>Certificados de pessoa e aplicações</h3>
+    <ul>
+      <li><strong>e-CPF</strong> — certificado de pessoa física (vincula ao CPF).</li>
+      <li><strong>e-CNPJ</strong> — certificado de pessoa jurídica (vincula ao CNPJ).</li>
+      <li><strong>NF-e / CT-e</strong> — usados para assinar documentos fiscais eletrônicos.</li>
+      <li><strong>SSL/TLS ICP-Brasil</strong> — para sites e servidores.</li>
+    </ul>
+
+    <h3>Padrões de assinatura (perfis)</h3>
+    <p>A ICP-Brasil adota os padrões <strong>AdES</strong> (Advanced Electronic Signatures) do ETSI,
+       conforme o documento <strong>DOC-ICP-15</strong>:</p>
+    <table class="deftable">
+      <tr><th>Padrão</th><th>Base</th><th>Uso típico</th></tr>
+      <tr><td><strong>CAdES</strong></td><td>CMS / PKCS#7</td><td>Assinatura de arquivos binários (.p7s)</td></tr>
+      <tr><td><strong>XAdES</strong></td><td>XML</td><td>NF-e e documentos XML</td></tr>
+      <tr><td><strong>PAdES</strong></td><td>PDF</td><td>Assinatura embutida em PDF</td></tr>
+    </table>
+    <p>Esses perfis preveem <strong>carimbo do tempo (timestamp)</strong> de uma ACT (Autoridade de
+       Carimbo do Tempo) e a inclusão de informações de revogação, permitindo verificar a assinatura
+       <em>no longo prazo</em> (LTV — Long-Term Validation), mesmo após o certificado expirar.</p>
+
+    <div class="box">
+      <svg class="icon"><use href="#i-warn"/></svg>
+      Nada disso ocorre nesta simulação — aqui reproduzimos apenas a <strong>mecânica criptográfica</strong>
+      e a <strong>estrutura de dados X.509</strong>, para fins de aprendizado.
+    </div>
+
+    <h2 id="s-boaspraticas"><svg class="icon"><use href="#i-shield"/></svg> Boas práticas de segurança</h2>
+    <ul>
+      <li>Proteja a <strong>chave privada</strong> com senha forte e nunca a compartilhe.</li>
+      <li>Mantenha o arquivo da chave com <strong>permissões restritas</strong> de acesso.</li>
+      <li>Em ambientes reais, chaves comprometidas devem ser <strong>revogadas</strong> junto à AC
+          (que publica listas de revogação — CRL/OCSP).</li>
+      <li>Acompanhe a <strong>validade</strong> e renove o certificado antes do vencimento.</li>
+      <li>Prefira armazenar a chave em <strong>hardware seguro</strong> (token/smartcard) quando possível.</li>
+    </ul>
+
+    <h2 id="s-ref"><svg class="icon"><use href="#i-book"/></svg> Referências (RFCs e normas)</h2>
+    <ul class="ref">
+      <li><strong>RFC 5280</strong> — Internet X.509 PKI Certificate and CRL Profile (perfil de certificado e validação de cadeia).</li>
+      <li><strong>RFC 8017</strong> — PKCS#1 v2.2: RSA Cryptography Specifications (RSA, OAEP, PSS).</li>
+      <li><strong>RFC 6960</strong> — OCSP (Online Certificate Status Protocol).</li>
+      <li><strong>RFC 8446</strong> — TLS 1.3.</li>
+      <li><strong>RFC 7468</strong> — Textual encodings of PKIX (formato PEM).</li>
+      <li><strong>RFC 5652</strong> — CMS (Cryptographic Message Syntax), base do CAdES/S-MIME.</li>
+      <li><strong>ITU-T X.509</strong> — recomendação que define o certificado.</li>
+      <li><strong>ITU-T X.690</strong> — regras de codificação ASN.1 (BER/CER/DER).</li>
+      <li><strong>FIPS 180-4</strong> — Secure Hash Standard (família SHA-2).</li>
+      <li><strong>FIPS 186-5</strong> — Digital Signature Standard (RSA, ECDSA, EdDSA).</li>
+      <li><strong>FIPS 203/204</strong> — ML-KEM e ML-DSA (criptografia pós-quântica, 2024).</li>
+      <li><strong>MP 2.200-2/2001</strong> — institui a ICP-Brasil.</li>
+      <li><strong>Lei 14.063/2020</strong> — assinaturas eletrônicas no setor público (simples, avançada, qualificada).</li>
+      <li><strong>DOC-ICP-04 / DOC-ICP-15</strong> — DPC e padrões de assinatura (CAdES/XAdES/PAdES) da ICP-Brasil.</li>
+      <li>Documentação da biblioteca <strong>cryptography</strong> (pyca) — <code class="inline">cryptography.io</code>.</li>
+    </ul>
+
+    <h2 id="s-glossario"><svg class="icon"><use href="#i-book"/></svg> Glossário</h2>
+    <table class="deftable">
+      <tr><th>Termo</th><th>Significado</th></tr>
+      <tr><td><strong>RSA</strong></td><td>Algoritmo de criptografia assimétrica (Rivest–Shamir–Adleman), baseado na fatoração de inteiros.</td></tr>
+      <tr><td><strong>ECC / ECDSA</strong></td><td>Criptografia de curvas elípticas; ECDSA é o algoritmo de assinatura correspondente.</td></tr>
+      <tr><td><strong>AES</strong></td><td>Algoritmo simétrico padrão para cifrar dados em volume.</td></tr>
+      <tr><td><strong>X.509</strong></td><td>Padrão internacional que define a estrutura de certificados digitais.</td></tr>
+      <tr><td><strong>DN</strong></td><td>Distinguished Name — conjunto de atributos que identifica o titular.</td></tr>
+      <tr><td><strong>CN</strong></td><td>Common Name — o nome comum do titular (campo do DN).</td></tr>
+      <tr><td><strong>SAN</strong></td><td>Subject Alternative Name — nomes alternativos (DNS, IP, e-mail); decisivo em TLS.</td></tr>
+      <tr><td><strong>OID</strong></td><td>Object Identifier — identificador numérico global de um campo/algoritmo.</td></tr>
+      <tr><td><strong>ASN.1</strong></td><td>Notação abstrata que descreve a estrutura do certificado.</td></tr>
+      <tr><td><strong>DER / BER</strong></td><td>Regras de codificação binária do ASN.1 (DER é canônico).</td></tr>
+      <tr><td><strong>PEM</strong></td><td>Bytes DER em Base64, com marcadores BEGIN/END.</td></tr>
+      <tr><td><strong>PKCS#1</strong></td><td>Operações e padding do RSA (v1.5, OAEP, PSS).</td></tr>
+      <tr><td><strong>PKCS#8</strong></td><td>Formato de armazenamento de chave privada.</td></tr>
+      <tr><td><strong>PKCS#10 / CSR</strong></td><td>Pedido de assinatura de certificado enviado à AC.</td></tr>
+      <tr><td><strong>PKCS#11</strong></td><td>API de acesso a tokens/HSM.</td></tr>
+      <tr><td><strong>PKCS#12 / .pfx</strong></td><td>Agrupa certificado + chave em um único arquivo protegido.</td></tr>
+      <tr><td><strong>Hash / SHA-256</strong></td><td>Resumo digital de tamanho fixo usado em assinaturas.</td></tr>
+      <tr><td><strong>Fingerprint</strong></td><td>Hash do certificado inteiro, usado para identificá-lo.</td></tr>
+      <tr><td><strong>Padding (OAEP/PSS)</strong></td><td>Preenchimento que torna o RSA seguro (probabilístico).</td></tr>
+      <tr><td><strong>PKI / ICP</strong></td><td>Public Key Infrastructure — infraestrutura de chaves públicas.</td></tr>
+      <tr><td><strong>AC / CA</strong></td><td>Autoridade Certificadora — emite certificados.</td></tr>
+      <tr><td><strong>AR / RA</strong></td><td>Autoridade de Registro — valida a identidade do solicitante.</td></tr>
+      <tr><td><strong>ACT</strong></td><td>Autoridade de Carimbo do Tempo — emite timestamps confiáveis.</td></tr>
+      <tr><td><strong>ITI</strong></td><td>Instituto Nacional de Tecnologia da Informação — AC Raiz da ICP-Brasil.</td></tr>
+      <tr><td><strong>Trust store</strong></td><td>Conjunto de raízes confiáveis instaladas no sistema/navegador.</td></tr>
+      <tr><td><strong>CRL / OCSP</strong></td><td>Mecanismos para verificar se um certificado foi revogado.</td></tr>
+      <tr><td><strong>Forward secrecy</strong></td><td>Propriedade em que comprometer a chave de longo prazo não revela sessões passadas.</td></tr>
+      <tr><td><strong>AdES (CAdES/XAdES/PAdES)</strong></td><td>Padrões de assinatura avançada para arquivos, XML e PDF.</td></tr>
+      <tr><td><strong>PQC</strong></td><td>Criptografia pós-quântica (ex.: ML-KEM, ML-DSA).</td></tr>
+      <tr><td><strong>Autoassinado</strong></td><td>Certificado em que o titular e o emissor são a mesma entidade.</td></tr>
+    </table>
+
+    <h2 id="s-faq"><svg class="icon"><use href="#i-info"/></svg> Perguntas frequentes</h2>
+    <div class="faq">
+      <details>
+        <summary>Este certificado serve para assinar documentos com validade legal?</summary>
+        <p>Não. Por ser autoassinado e simulado, ele não tem reconhecimento jurídico. Para isso é
+           necessário um certificado emitido por uma AC credenciada na ICP-Brasil.</p>
+      </details>
+      <details>
+        <summary>Qual a diferença entre o arquivo .pem do certificado e o da chave?</summary>
+        <p>O <code class="inline">certificate.pem</code> é público e pode ser entregue a qualquer um para
+           verificar suas assinaturas. O <code class="inline">private_key.pem</code> é secreto — é o que
+           realmente prova sua identidade e deve ser mantido em segredo absoluto.</p>
+      </details>
+      <details>
+        <summary>Por que o "Emissor" é igual ao "Titular"?</summary>
+        <p>Porque o certificado é autoassinado: você mesmo assina o seu próprio certificado. Em uma
+           emissão real, o Emissor seria a Autoridade Certificadora.</p>
+      </details>
+      <details>
+        <summary>O que acontece se eu perder a senha da chave privada?</summary>
+        <p>Não há como recuperá-la. A chave fica inutilizável e seria necessário gerar um novo par de
+           chaves e um novo certificado.</p>
+      </details>
+      <details>
+        <summary>Por que o RSA "puro" (textbook) é inseguro?</summary>
+        <p>Porque é determinístico (a mesma mensagem gera sempre a mesma cifra, permitindo análise) e
+           maleável (dá para manipular o texto cifrado). Por isso aplica-se sempre um padding como OAEP
+           (para cifrar) ou PSS (para assinar).</p>
+      </details>
+      <details>
+        <summary>Qual a diferença entre o CN e o SAN num certificado de site?</summary>
+        <p>Historicamente o domínio ficava no CN, mas os navegadores modernos <strong>ignoram o CN</strong>
+           para validação de host e usam exclusivamente o <strong>SubjectAlternativeName (SAN)</strong>.
+           Um certificado TLS sem SAN é rejeitado.</p>
+      </details>
+      <details>
+        <summary>2048 bits de RSA são "mais seguros" que 256 bits de ECC?</summary>
+        <p>Não — são aproximadamente equivalentes (~112–128 bits de segurança). ECC alcança a mesma força
+           com chaves muito menores porque se baseia em um problema matemático diferente (log discreto em
+           curvas elípticas).</p>
+      </details>
+      <details>
+        <summary>Por que se assina o <em>hash</em> do documento, e não o documento inteiro?</summary>
+        <p>Por eficiência e por limite de tamanho: operações RSA atuam sobre blocos do tamanho da chave.
+           Assinar um hash de tamanho fixo (256 bits) é rápido e, graças à resistência a colisão da função
+           de hash, é tão seguro quanto assinar o documento todo.</p>
+      </details>
+      <details>
+        <summary>Por que <code class="inline">e = 65537</code> é tão comum?</summary>
+        <p>É um primo de Fermat (2¹⁶+1) com apenas dois bits 1, o que torna a exponenciação na cifragem/
+           verificação muito rápida, sem comprometer a segurança (expoentes muito pequenos, como 3, têm
+           ataques conhecidos em certos cenários).</p>
+      </details>
+    </div>
+  </section>
+
+  <footer>
+    <svg class="icon"><use href="#i-lock"/></svg>
+    Atividade educacional • Padrão X.509 • Biblioteca <code class="inline">cryptography</code> • Executado em Docker
+  </footer>
+</div>
+
+<!-- MODAL com detalhes completos do certificado -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this) fecharModal()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3><svg class="icon"><use href="#i-file-cert"/></svg> <span id="modalTitulo">Detalhes do certificado</span></h3>
+      <button class="modal-close" onclick="fecharModal()" aria-label="Fechar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <!-- Detalhes -->
+      <div class="card">
+        <div class="card-head"><svg class="icon"><use href="#i-info"/></svg> Informações</div>
+        <table id="mTabela"></table>
+      </div>
+
+      <!-- Arquivos -->
+      <div class="card">
+        <div class="card-head"><svg class="icon"><use href="#i-list"/></svg> Arquivos gerados</div>
+        <div id="mArquivos"></div>
+      </div>
+      <div class="hint" style="margin:-8px 0 14px;">Os arquivos também foram salvos em disco na pasta <code class="inline">saida/</code> do projeto.</div>
+
+      <div class="aviso" style="margin-top:0;">
+        <svg class="icon icon-lg"><use href="#i-shield"/></svg>
+        <div><strong>Guarde a chave privada com segurança.</strong> Quem tiver acesso a ela pode se
+        passar pelo titular do certificado. Nunca a compartilhe.</div>
+      </div>
+
+      <!-- Certificado decodificado -->
+      <div class="pem-wrap">
+        <div class="pem-head">
+          <span class="lbl"><svg class="icon"><use href="#i-eye"/></svg> Certificado decodificado (conteúdo legível)</span>
+          <button class="copy-btn" onclick="copiar('mCertTexto', this)"><svg class="icon"><use href="#i-copy"/></svg> Copiar</button>
+        </div>
+        <pre id="mCertTexto"></pre>
+      </div>
+
+      <!-- PEM do certificado -->
+      <div class="pem-wrap">
+        <div class="pem-head">
+          <span class="lbl"><svg class="icon"><use href="#i-file-cert"/></svg> certificate.pem</span>
+          <button class="copy-btn" onclick="copiar('mPemCert', this)"><svg class="icon"><use href="#i-copy"/></svg> Copiar</button>
+        </div>
+        <pre id="mPemCert"></pre>
+      </div>
+
+      <!-- PEM da chave -->
+      <div class="pem-wrap">
+        <div class="pem-head">
+          <span class="lbl"><svg class="icon"><use href="#i-file-key"/></svg> private_key.pem</span>
+          <button class="copy-btn" onclick="copiar('mPemChave', this)"><svg class="icon"><use href="#i-copy"/></svg> Copiar</button>
+        </div>
+        <pre id="mPemChave"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Base da API: se a página NÃO estiver sendo servida por http(s) — por exemplo,
+// aberta como arquivo local ou no painel de preview — aponta para o servidor Flask.
+const API = (location.protocol === 'http:' || location.protocol === 'https:') ? '' : 'http://localhost:5000';
+
+function abrirAba(ev, id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  ev.currentTarget.classList.add('active');
+}
+
+function formatarTamanho(bytes) {
+  if (bytes < 1024) return bytes + ' bytes';
+  return (bytes / 1024).toFixed(2) + ' KB (' + bytes + ' bytes)';
+}
+
+async function copiar(id, btn) {
+  try {
+    await navigator.clipboard.writeText(document.getElementById(id).textContent);
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="icon"><use href="#i-check"/></svg> Copiado!';
+    setTimeout(() => btn.innerHTML = orig, 1500);
+  } catch (e) { alert('Não foi possível copiar.'); }
+}
+
+const form = document.getElementById('form');
+const erroBox = document.getElementById('erroBox');
+const okBox = document.getElementById('okBox');
+const btn = document.getElementById('btnGerar');
+
+const ROTULOS = {
+  nome_comum: 'Nome Comum (CN)', organizacao: 'Organização', cidade: 'Cidade',
+  estado: 'Estado', pais: 'País', email: 'E-mail', serial: 'Número de série',
+  algoritmo_assinatura: 'Algoritmo de assinatura', tamanho_chave: 'Tamanho da chave (bits)',
+  valido_de: 'Válido de', valido_ate: 'Válido até', dias_validade: 'Dias de validade'
+};
+const ORDEM = ['nome_comum','organizacao','cidade','estado','pais','email',
+               'tamanho_chave','algoritmo_assinatura','serial','valido_de','valido_ate','dias_validade'];
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ---- Listagem ----
+async function carregarLista() {
+  try {
+    const r = await fetch(API + '/historico');
+    const j = await r.json();
+    const corpo = document.getElementById('corpoLista');
+    const tabela = document.getElementById('tabelaLista');
+    const vazio = document.getElementById('vazio');
+    const contador = document.getElementById('contador');
+    const itens = j.itens || [];
+    contador.textContent = itens.length ? itens.length : '';
+    if (!itens.length) {
+      tabela.style.display = 'none';
+      vazio.style.display = 'flex';
+      return;
+    }
+    vazio.style.display = 'none';
+    tabela.style.display = 'table';
+    corpo.innerHTML = '';
+    itens.forEach(it => {
+      const pill = it.chave_protegida
+        ? '<span class="pill sim">protegida</span>' : '<span class="pill nao">sem senha</span>';
+      corpo.innerHTML +=
+        '<tr onclick="abrirModal(\'' + it.id + '\')">' +
+          '<td><strong>' + esc(it.nome_comum) + '</strong></td>' +
+          '<td>' + esc(it.organizacao) + '</td>' +
+          '<td>' + esc(it.localidade) + '</td>' +
+          '<td>' + it.tamanho_chave + ' bits<br>' + pill + '</td>' +
+          '<td>' + esc(it.valido_ate) + '</td>' +
+          '<td>' + esc(it.criado_em) + '</td>' +
+          '<td><button class="btn-mini" onclick="event.stopPropagation(); abrirModal(\'' + it.id + '\')">' +
+            '<svg class="icon"><use href="#i-eye"/></svg> Detalhes</button></td>' +
+        '</tr>';
+    });
+  } catch (e) {
+    document.getElementById('vazio').textContent = 'Não foi possível carregar a lista (servidor offline?).';
+  }
+}
+
+// ---- Modal ----
+function fecharModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function abrirModal(id) {
+  try {
+    const r = await fetch(API + '/certificado/' + id);
+    const j = await r.json();
+    if (!j.ok) { alert(j.erro || 'Erro'); return; }
+    const it = j.item;
+    document.getElementById('modalTitulo').textContent = it.detalhes.nome_comum;
+
+    // Tabela de informações
+    const t = document.getElementById('mTabela');
+    t.innerHTML = '';
+    ORDEM.forEach(k => {
+      if (it.detalhes[k] !== undefined) {
+        t.innerHTML += '<tr><td class="k">' + ROTULOS[k] + '</td><td class="v">' + esc(it.detalhes[k]) + '</td></tr>';
+      }
+    });
+    t.innerHTML += '<tr><td class="k">Chave protegida por senha?</td><td class="v">' + (it.chave_protegida ? 'Sim' : 'Não') + '</td></tr>';
+    t.innerHTML += '<tr><td class="k">Criado em</td><td class="v">' + esc(it.criado_em) + '</td></tr>';
+
+    // Arquivos
+    const arq = document.getElementById('mArquivos');
+    arq.innerHTML = '';
+    it.arquivos.forEach(a => {
+      const ehCert = a.nome.indexOf('cert') !== -1;
+      arq.innerHTML +=
+        '<div class="arquivo">' +
+          '<div class="fileicon ' + (ehCert ? 'cert' : 'key') + '">' +
+            '<svg class="icon icon-lg"><use href="#' + (ehCert ? 'i-file-cert' : 'i-file-key') + '"/></svg></div>' +
+          '<div class="info"><div class="nome">' + a.nome + '</div>' +
+            '<div class="meta">' + a.tipo + ' • ' + formatarTamanho(a.tamanho) +
+              (a.caminho ? ' • ' + a.caminho : '') + '</div></div>' +
+          '<a class="dl ' + (ehCert ? '' : 'key') + '" href="' + API + a.download + '">' +
+            '<svg class="icon"><use href="#i-download"/></svg> Baixar</a>' +
+        '</div>';
+    });
+
+    document.getElementById('mCertTexto').textContent = it.cert_texto || '';
+    document.getElementById('mPemCert').textContent = it.cert_pem;
+    document.getElementById('mPemChave').textContent = it.chave_pem;
+
+    document.getElementById('modal').classList.add('open');
+  } catch (e) {
+    alert('Falha ao abrir detalhes: ' + e);
+  }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+
+// ---- Geração ----
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  erroBox.innerHTML = '';
+  okBox.innerHTML = '';
+  btn.disabled = true;
+  btn.innerHTML = '<svg class="icon"><use href="#i-gear"/></svg> Gerando...';
+
+  const dados = Object.fromEntries(new FormData(form).entries());
+  try {
+    const resp = await fetch(API + '/gerar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(dados)
+    });
+    const j = await resp.json();
+    if (!j.ok) {
+      erroBox.innerHTML = '<div class="erro"><svg class="icon"><use href="#i-x"/></svg> ' + (j.erro || 'Erro desconhecido.') + '</div>';
+    } else {
+      okBox.innerHTML = '<div class="aviso" style="background:#e8f5ec;border-color:#1b7a3d;color:#15622f;">' +
+        '<svg class="icon icon-lg"><use href="#i-check"/></svg>' +
+        '<div>Certificado gerado e adicionado à lista abaixo. Abrindo os detalhes…</div></div>';
+      await carregarLista();
+      abrirModal(j.id);
+    }
+  } catch (err) {
+    erroBox.innerHTML = '<div class="erro"><svg class="icon"><use href="#i-x"/></svg> Falha de comunicação: ' + err + '</div>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg class="icon"><use href="#i-gear"/></svg> Gerar Certificado';
+  }
+});
+
+// Carrega a lista ao abrir a página
+carregarLista();
+</script>
+</body>
+</html>

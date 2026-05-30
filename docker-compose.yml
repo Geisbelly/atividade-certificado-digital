@@ -1,0 +1,32 @@
+services:
+  # Interface web (acesse em http://localhost:5000)
+  web:
+    build: .
+    image: gerador-certificado-icpbrasil
+    container_name: gerador-certificado-web
+    ports:
+      - "5000:5000"
+    # Os arquivos .pem gerados pela interface ficam disponíveis em ./saida
+    volumes:
+      - ./saida:/app/saida
+    restart: unless-stopped
+
+  # (Opcional) Modo linha de comando — gera os arquivos direto na pasta ./saida
+  # Uso: docker compose run --rm cli
+  cli:
+    build: .
+    image: gerador-certificado-icpbrasil
+    profiles: ["cli"]
+    entrypoint: ["python", "/app/gerar_certificado.py"]
+    working_dir: /app/saida
+    volumes:
+      - ./saida:/app/saida
+    command: >
+      --bits 2048
+      --dias 365
+      --pais BR
+      --estado "Sao Paulo"
+      --cidade "Sao Paulo"
+      --organizacao "Organizacao Simulada LTDA"
+      --nome-comum "Usuario de Teste"
+      --email "usuario.teste@exemplo.com.br"

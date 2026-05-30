@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(command -v docker)",
+      "PowerShell(Get-Content C:\\\\Users\\\\word2\\\\Downloads\\\\SS\\\\_docker_check.txt | Out-String | Write-Output; \"FILELEN=\" + \\(Get-Item C:\\\\Users\\\\word2\\\\Downloads\\\\SS\\\\_docker_check.txt\\).Length)",
+      "PowerShell(docker compose build 2>&1)"
+    ]
+  }
+}

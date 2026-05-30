@@ -1,0 +1,7 @@
+saida/
+*.pem
+__pycache__/
+*.pyc
+.git
+README.md
+PASSO_A_PASSO.md
